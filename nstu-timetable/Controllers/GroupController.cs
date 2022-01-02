@@ -9,12 +9,12 @@ namespace nstu_timetable.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class TimetableController : ControllerBase
+    public class GroupController : ControllerBase
     {
         private readonly NstuTimetableContext nstuTimetableContext;
         private readonly GroupSyncService groupSyncService;
 
-        public TimetableController(NstuTimetableContext nstuTimetableContext, GroupSyncService groupSyncService)
+        public GroupController(NstuTimetableContext nstuTimetableContext, GroupSyncService groupSyncService)
         {
             this.nstuTimetableContext = nstuTimetableContext;
             this.groupSyncService = groupSyncService;
@@ -29,12 +29,11 @@ namespace nstu_timetable.Controllers
             return "OK";
         }
 
-        //TODO Change return value type
         [HttpGet]
         [Route("getAll")]
-        public string GetAll()
+        public List<Group> GetAll()
         {
-            return JsonSerializer.Serialize(nstuTimetableContext.Groups.ToArray());
+            return nstuTimetableContext.Groups.ToList();
         }
     }
 }
