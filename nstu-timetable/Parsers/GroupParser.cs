@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+﻿using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 using nstu_timetable.DbContexts;
 
 namespace nstu_timetable.Parsers
 {
-    public static class GroupParser
+    public class GroupParser : IParser<List<Group>>
     {
         private const string FACULTY_SELECTOR = "div.schedule__faculty.js-schedule-faculty";
         private const string FACULTY_NAME_SELECTOR = "a.schedule__faculty-title.js-schedule-faculty-back";
@@ -16,23 +12,18 @@ namespace nstu_timetable.Parsers
         private const string COURSE_NUMBER_SELECTOR = "label.schedule__faculty-course__title";
         private const string GROUP_SELECTOR = "div.schedule__faculty-groups";
 
-        public static async Task<List<Group>> ParseAllGroupAsync(string responseString)
+        public List<Group> Parse(IHtmlDocument document)
         {
-            var parser = new HtmlParser();
-            var document = await parser.ParseDocumentAsync(responseString);
             var faculties = document.QuerySelectorAll(FACULTY_SELECTOR);
 
             var result = new List<Group>();
 
-            foreach (var faculty in faculties)
-            {
-                result.AddRange(ParseFaculty(faculty));
-            }
+            Parallel.ForEach(faculties, f => result.AddRange(ParseFaculty(f)));
 
             return result;
         }
 
-        private static List<Group> ParseFaculty(IParentNode element)
+        private static IEnumerable<Group> ParseFaculty(IParentNode element)
         {
             var facultyName = element.QuerySelector(FACULTY_NAME_SELECTOR).TextContent.Trim();
 

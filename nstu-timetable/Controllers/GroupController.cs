@@ -1,7 +1,4 @@
-﻿using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using nstu_timetable.DbContexts;
 using nstu_timetable.Services;
 
@@ -22,11 +19,9 @@ namespace nstu_timetable.Controllers
 
         [HttpGet]
         [Route("startSync")]
-        public async Task<string> StartSync()
+        public async Task StartSync()
         {
             await groupSyncService.StartSyncAsync();
-
-            return "OK";
         }
 
         [HttpGet]

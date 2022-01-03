@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using nstu_timetable.DbContexts;
+﻿using nstu_timetable.DbContexts;
 using nstu_timetable.Parsers;
 
 namespace nstu_timetable.Services
@@ -16,8 +9,11 @@ namespace nstu_timetable.Services
         private readonly NstuTimetableContext nstuTimetableContext;
         private readonly ILogger<GroupSyncService> logger;
 
+        private readonly ParserWorker<List<Group>> groupParserWorker;
+
         public GroupSyncService(NstuTimetableContext nstuTimetableContext, ILogger<GroupSyncService> logger)
         {
+            groupParserWorker = new ParserWorker<List<Group>>(new GroupParser(), baseUrl);
             this.nstuTimetableContext = nstuTimetableContext;
             this.logger = logger;
         }
@@ -25,10 +21,10 @@ namespace nstu_timetable.Services
         public async Task StartSyncAsync()
         {
             logger.LogInformation("Start sync groups");
-
+            
             try
             {
-                var groups = await GetAllGroupsFromSiteAsync();
+                var groups = await groupParserWorker.Start();
                 groups.ForEach(SyncGroup);
                 logger.LogInformation("Groups are synchronized");
             }
@@ -37,27 +33,20 @@ namespace nstu_timetable.Services
                 logger.LogError(e, "Error sync groups");
             }
         }
-
-
-        private async Task<List<Group>> GetAllGroupsFromSiteAsync()
-        {
-            var request = WebRequest.Create(baseUrl);
-            request.Method = "GET";
-            using (var requestStream = (await request.GetResponseAsync()).GetResponseStream())
-            {
-                using (var reader = new StreamReader(requestStream))
-                {
-                    return await GroupParser.ParseAllGroupAsync(await reader.ReadToEndAsync());
-                }
-            }
-        }
+        
 
         private void SyncGroup(Group group)
         {
-            SyncGroupFacultyFromDb(group);
-            SyncGroupFromDb(group);
-
-            nstuTimetableContext.SaveChanges();
+            try
+            {
+                SyncGroupFacultyFromDb(group);
+                SyncGroupFromDb(group);
+                nstuTimetableContext.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, $"Error sync group {group.GroupName}");
+            }
         }
 
         private void SyncGroupFromDb(Group group)
